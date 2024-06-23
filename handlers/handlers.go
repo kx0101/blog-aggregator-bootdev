@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,6 +25,33 @@ func handleHealthz(w http.ResponseWriter, _r *http.Request) {
 
 func handleErr(w http.ResponseWriter, _r *http.Request) {
 	utils.RespondWithError(w, http.StatusInternalServerError, "Internal Server Error")
+}
+
+func handleGetUser(w http.ResponseWriter, r *http.Request, dbQueries *database.Queries) {
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		log.Println("Authorization header is missing")
+		utils.RespondWithError(w, http.StatusBadRequest, "Authorization header is missing")
+		return
+	}
+
+	splitToken := strings.Split(token, "ApiKey ")
+	if len(splitToken) != 2 {
+		log.Println("Authorization header format must be 'ApiKey <your-api-key>'")
+		utils.RespondWithError(w, http.StatusBadRequest, "Invalid Authorization header format")
+		return
+	}
+
+	apiKey := splitToken[1]
+
+	user, err := dbQueries.GetUser(r.Context(), apiKey)
+	if err != nil {
+		log.Printf("Error: %s", err.Error())
+		utils.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, user)
 }
 
 func handleCreateUser(w http.ResponseWriter, r *http.Request, dbQueries *database.Queries) {
@@ -57,7 +86,10 @@ func handleCreateUser(w http.ResponseWriter, r *http.Request, dbQueries *databas
 func RegisterHandlers(mux *http.ServeMux, dbQueries *database.Queries) {
 	mux.HandleFunc("/v1/healthz", handleHealthz)
 	mux.HandleFunc("/v1/err", handleErr)
-	mux.HandleFunc("/v1/users", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /v1/users", func(w http.ResponseWriter, r *http.Request) {
 		handleCreateUser(w, r, dbQueries)
+	})
+	mux.HandleFunc("GET /v1/users", func(w http.ResponseWriter, r *http.Request) {
+		handleGetUser(w, r, dbQueries)
 	})
 }
