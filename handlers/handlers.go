@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -12,6 +11,17 @@ import (
 	"github.com/kx0101/blog-aggregator-bootdev/internal/database"
 	"github.com/kx0101/blog-aggregator-bootdev/utils"
 )
+
+func RegisterHandlers(mux *http.ServeMux, dbQueries *database.Queries) {
+	mux.HandleFunc("/v1/healthz", handleHealthz)
+	mux.HandleFunc("/v1/err", handleErr)
+	mux.HandleFunc("POST /v1/users", func(w http.ResponseWriter, r *http.Request) {
+		handleCreateUser(w, r, dbQueries)
+	})
+	mux.HandleFunc("GET /v1/users", func(w http.ResponseWriter, r *http.Request) {
+		handleGetUser(w, r, dbQueries)
+	})
+}
 
 func handleHealthz(w http.ResponseWriter, _r *http.Request) {
 	responseBody := struct {
@@ -81,15 +91,4 @@ func handleCreateUser(w http.ResponseWriter, r *http.Request, dbQueries *databas
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, user)
-}
-
-func RegisterHandlers(mux *http.ServeMux, dbQueries *database.Queries) {
-	mux.HandleFunc("/v1/healthz", handleHealthz)
-	mux.HandleFunc("/v1/err", handleErr)
-	mux.HandleFunc("POST /v1/users", func(w http.ResponseWriter, r *http.Request) {
-		handleCreateUser(w, r, dbQueries)
-	})
-	mux.HandleFunc("GET /v1/users", func(w http.ResponseWriter, r *http.Request) {
-		handleGetUser(w, r, dbQueries)
-	})
 }
