@@ -8,6 +8,12 @@ update feeds
 set last_fetched_at = now()
 where id = ANY($1::uuid[]);
 
+-- name: GetNextFeedsToFetch :many
+select *
+from feeds
+order by last_fetched_at
+limit $1;
+
 -- name: GetFeeds :many
 select *
 from feeds;
