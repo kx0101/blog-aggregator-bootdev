@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 const createFeed = `-- name: CreateFeed :one
@@ -109,10 +110,10 @@ func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
 const updateLastFetchedAt = `-- name: UpdateLastFetchedAt :exec
 update feeds
 set last_fetched_at = now()
-where id = $1
+where id = ANY($1::uuid[])
 `
 
-func (q *Queries) UpdateLastFetchedAt(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, updateLastFetchedAt, id)
+func (q *Queries) UpdateLastFetchedAt(ctx context.Context, dollar_1 []uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, updateLastFetchedAt, pq.Array(dollar_1))
 	return err
 }

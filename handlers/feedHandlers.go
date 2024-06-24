@@ -39,19 +39,21 @@ func handleGetFeeds(w http.ResponseWriter, r *http.Request, dbQueries *database.
 	}
 
 	var feeds []Feed
+	var ids []uuid.UUID
 	if feedsFromDb == nil {
 		feeds = []Feed{}
 	}
 
 	for _, feed := range feedsFromDb {
-		err := dbQueries.UpdateLastFetchedAt(r.Context(), feed.ID)
-		if err != nil {
-			log.Printf("Error updating last_fetched_at for feed %s: %s", feed.ID, err)
-			utils.RespondWithError(w, http.StatusInternalServerError, "Error updating last_fetched_at")
-			return
-		}
-
+		ids = append(ids, feed.ID)
 		feeds = append(feeds, DatabaseFeedToFeed(feed))
+	}
+
+	err = dbQueries.UpdateLastFetchedAt(r.Context(), ids)
+	if err != nil {
+		log.Printf("Error updating last_fetched_at for feeds: %s", err)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error updating last_fetched_at")
+		return
 	}
 
 	log.Print("Fetched feeds")

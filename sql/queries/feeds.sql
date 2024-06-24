@@ -6,7 +6,7 @@ returning *;
 -- name: UpdateLastFetchedAt :exec
 update feeds
 set last_fetched_at = now()
-where id = $1;
+where id = ANY($1::uuid[]);
 
 -- name: GetFeeds :many
 select *
