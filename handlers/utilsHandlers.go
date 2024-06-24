@@ -4,11 +4,10 @@ import (
 	"net/http"
 
 	"github.com/kx0101/blog-aggregator-bootdev/handlers/middlewares"
-	"github.com/kx0101/blog-aggregator-bootdev/internal/database"
 	"github.com/kx0101/blog-aggregator-bootdev/utils"
 )
 
-func RegisterUtilsHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux, dbQueries *database.Queries) {
+func RegisterUtilsHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 	mux.HandleFunc("/v1/healthz", handleHealthz)
 	mux.HandleFunc("/v1/err", handleErr)
 }

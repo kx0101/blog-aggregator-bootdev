@@ -10,7 +10,8 @@ import (
 func RegisterHandlers(mux *http.ServeMux, dbQueries *database.Queries) {
 	cfg := &middlewares.APIConfig{DBQueries: dbQueries}
 
-	RegisterFeedHandlers(cfg, mux, dbQueries)
-	RegisterUserHandlers(cfg, mux, dbQueries)
-	RegisterUtilsHandlers(cfg, mux, dbQueries)
+	RegisterFeedHandlers(cfg, mux)
+	RegisterFeedFollowsHandlers(cfg, mux)
+	RegisterUserHandlers(cfg, mux)
+	RegisterUtilsHandlers(cfg, mux)
 }

@@ -12,8 +12,27 @@ import (
 	"github.com/kx0101/blog-aggregator-bootdev/utils"
 )
 
-func RegisterFeedHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux, dbQueries *database.Queries) {
+func RegisterFeedHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/feeds", cfg.MiddlewareAuth(handleCreateFeed))
+	mux.HandleFunc("GET /v1/feeds", func(w http.ResponseWriter, r *http.Request) {
+		handleGetFeeds(w, r, cfg.DBQueries)
+	})
+}
+
+func handleGetFeeds(w http.ResponseWriter, r *http.Request, dbQueries *database.Queries) {
+	feeds, err := dbQueries.GetFeeds(r.Context())
+	if err != nil {
+		log.Printf("Error fetching feeds: %s", err)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error fetching feeds")
+		return
+	}
+
+	if feeds == nil {
+		feeds = []database.Feed{}
+	}
+
+	log.Print("Fetched feeds")
+	utils.RespondWithJSON(w, http.StatusOK, feeds)
 }
 
 func handleCreateFeed(w http.ResponseWriter, r *http.Request, user database.User, dbQueries *database.Queries) {
@@ -46,5 +65,6 @@ func handleCreateFeed(w http.ResponseWriter, r *http.Request, user database.User
 		return
 	}
 
-	utils.RespondWithJSON(w, http.StatusOK, feed)
+	log.Printf("New feed created with id: %s", id)
+	utils.RespondWithJSON(w, http.StatusCreated, feed)
 }

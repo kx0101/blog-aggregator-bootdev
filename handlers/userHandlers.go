@@ -12,14 +12,15 @@ import (
 	"github.com/kx0101/blog-aggregator-bootdev/utils"
 )
 
-func RegisterUserHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux, dbQueries *database.Queries) {
+func RegisterUserHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/users", func(w http.ResponseWriter, r *http.Request) {
-		handleCreateUser(w, r, dbQueries)
+		handleCreateUser(w, r, cfg.DBQueries)
 	})
 	mux.HandleFunc("GET /v1/users", cfg.MiddlewareAuth(handleGetUser))
 }
 
 func handleGetUser(w http.ResponseWriter, r *http.Request, user database.User, dbQueries *database.Queries) {
+	log.Printf("Fetched user with id: %s", user.ID)
 	utils.RespondWithJSON(w, http.StatusOK, user)
 }
 
@@ -49,5 +50,6 @@ func handleCreateUser(w http.ResponseWriter, r *http.Request, dbQueries *databas
 		return
 	}
 
+	log.Printf("New user created with id: %s", id)
 	utils.RespondWithJSON(w, http.StatusOK, user)
 }

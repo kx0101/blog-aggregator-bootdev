@@ -12,7 +12,8 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("Error: %s", err)
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
