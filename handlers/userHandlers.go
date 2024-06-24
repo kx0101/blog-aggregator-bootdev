@@ -12,6 +12,14 @@ import (
 	"github.com/kx0101/blog-aggregator-bootdev/utils"
 )
 
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
+	ApiKey    string    `json:"api_key"`
+}
+
 func RegisterUserHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/users", func(w http.ResponseWriter, r *http.Request) {
 		handleCreateUser(w, r, cfg.DBQueries)
@@ -52,4 +60,14 @@ func handleCreateUser(w http.ResponseWriter, r *http.Request, dbQueries *databas
 
 	log.Printf("New user created with id: %s", id)
 	utils.RespondWithJSON(w, http.StatusOK, user)
+}
+
+func DatabaseUserToUser(dbUser database.User) User {
+	return User{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Name:      dbUser.Name,
+		ApiKey:    dbUser.ApiKey,
+	}
 }

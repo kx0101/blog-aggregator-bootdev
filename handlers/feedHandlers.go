@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -12,6 +13,16 @@ import (
 	"github.com/kx0101/blog-aggregator-bootdev/utils"
 )
 
+type Feed struct {
+	ID            uuid.UUID  `json:"id"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+	Name          string     `json:"name"`
+	Url           string     `json:"url"`
+	UserID        uuid.UUID  `json:"user_id"`
+	LastFetchedAt *time.Time `json:"last_feched_at"`
+}
+
 func RegisterFeedHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/feeds", cfg.MiddlewareAuth(handleCreateFeed))
 	mux.HandleFunc("GET /v1/feeds", func(w http.ResponseWriter, r *http.Request) {
@@ -20,15 +31,20 @@ func RegisterFeedHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 }
 
 func handleGetFeeds(w http.ResponseWriter, r *http.Request, dbQueries *database.Queries) {
-	feeds, err := dbQueries.GetFeeds(r.Context())
+	feedsFromDb, err := dbQueries.GetFeeds(r.Context())
 	if err != nil {
 		log.Printf("Error fetching feeds: %s", err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Error fetching feeds")
 		return
 	}
 
-	if feeds == nil {
-		feeds = []database.Feed{}
+	var feeds []Feed
+	if feedsFromDb == nil {
+		feeds = []Feed{}
+	}
+
+	for _, feed := range feedsFromDb {
+		feeds = append(feeds, DatabaseFeedToFeed(feed))
 	}
 
 	log.Print("Fetched feeds")
@@ -67,4 +83,24 @@ func handleCreateFeed(w http.ResponseWriter, r *http.Request, user database.User
 
 	log.Printf("New feed created with id: %s", id)
 	utils.RespondWithJSON(w, http.StatusCreated, feed)
+}
+
+func NullableTimeToTime(nt sql.NullTime) *time.Time {
+	if nt.Valid {
+		return &nt.Time
+	}
+
+	return nil
+}
+
+func DatabaseFeedToFeed(dbFeed database.Feed) Feed {
+	return Feed{
+		ID:            dbFeed.ID,
+		CreatedAt:     dbFeed.CreatedAt,
+		UpdatedAt:     dbFeed.UpdatedAt,
+		Name:          dbFeed.Name,
+		Url:           dbFeed.Url,
+		UserID:        dbFeed.UserID,
+		LastFetchedAt: NullableTimeToTime(dbFeed.LastFetchedAt),
+	}
 }

@@ -13,6 +13,14 @@ import (
 	"github.com/kx0101/blog-aggregator-bootdev/utils"
 )
 
+type FeedFollow struct {
+	ID        uuid.UUID `json:"id"`
+	FeedID    uuid.UUID `json:"feed_id"`
+	UserID    uuid.UUID `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 func RegisterFeedFollowsHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/feed_follows", cfg.MiddlewareAuth(handleCreateFeedFollow))
 	mux.HandleFunc("GET /v1/feed_follows", cfg.MiddlewareAuth(handleGetFeedFollowsForUser))
@@ -20,7 +28,7 @@ func RegisterFeedFollowsHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux)
 }
 
 func handleGetFeedFollowsForUser(w http.ResponseWriter, r *http.Request, user database.User, dbQueries *database.Queries) {
-	feeds, err := dbQueries.GetFeedFollowsForUser(r.Context(), user.ID)
+	feedFollowsFromDb, err := dbQueries.GetFeedFollowsForUser(r.Context(), user.ID)
 
 	if err != nil {
 		log.Printf("Error: %s getting feed follows for the user with id: %s", err.Error(), user.ID)
@@ -28,12 +36,17 @@ func handleGetFeedFollowsForUser(w http.ResponseWriter, r *http.Request, user da
 		return
 	}
 
-	if feeds == nil {
-		feeds = []database.FeedFollow{}
+	var feedfollows []FeedFollow
+	if feedFollowsFromDb == nil {
+		feedfollows = []FeedFollow{}
+	}
+
+	for _, feed := range feedFollowsFromDb {
+		feedfollows = append(feedfollows, DatabaseFeedFollowToFeedFollow(feed))
 	}
 
 	log.Printf("Fetched feed follows for the user with id: %s", user.ID)
-	utils.RespondWithJSON(w, http.StatusOK, feeds)
+	utils.RespondWithJSON(w, http.StatusOK, feedfollows)
 }
 
 func handleDeleteFeedFollow(w http.ResponseWriter, r *http.Request, user database.User, dbQueries *database.Queries) {
@@ -126,4 +139,14 @@ func handleCreateFeedFollow(w http.ResponseWriter, r *http.Request, user databas
 
 	log.Printf("New feed follow created with id: %s", id)
 	utils.RespondWithJSON(w, http.StatusCreated, responseBody)
+}
+
+func DatabaseFeedFollowToFeedFollow(dbFeedFollow database.FeedFollow) FeedFollow {
+	return FeedFollow{
+		ID:        dbFeedFollow.ID,
+		FeedID:    dbFeedFollow.FeedID,
+		UserID:    dbFeedFollow.UserID,
+		CreatedAt: dbFeedFollow.CreatedAt,
+		UpdatedAt: dbFeedFollow.UpdatedAt,
+	}
 }
