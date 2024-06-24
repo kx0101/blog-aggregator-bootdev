@@ -25,9 +25,38 @@ type Feed struct {
 
 func RegisterFeedHandlers(cfg *middlewares.APIConfig, mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/feeds", cfg.MiddlewareAuth(handleCreateFeed))
+	mux.HandleFunc("PUT /v1/feeds/mark_as_fetched/{id}", func(w http.ResponseWriter, r *http.Request) {
+		handleMarkFeedAsFetched(w, r, cfg.DBQueries)
+	})
 	mux.HandleFunc("GET /v1/feeds", func(w http.ResponseWriter, r *http.Request) {
 		handleGetFeeds(w, r, cfg.DBQueries)
 	})
+}
+
+func handleMarkFeedAsFetched(w http.ResponseWriter, r *http.Request, dbQueries *database.Queries) {
+	feedId := r.PathValue("id")
+	if feedId == "" {
+		log.Print("No feed id provided")
+		utils.RespondWithError(w, http.StatusBadRequest, "No feed id provided")
+		return
+	}
+
+	id, err := uuid.Parse(feedId)
+	if err != nil {
+		log.Println("feed id is not in uuid format")
+		utils.RespondWithError(w, http.StatusBadRequest, "feed id is not in uuid format")
+		return
+	}
+
+	err = dbQueries.MarkFeedFetched(r.Context(), id)
+	if err != nil {
+		log.Printf("Error marking feed as fetched: %s", err)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Error marking feed as fetched")
+		return
+	}
+
+	log.Printf("Feed with id: %s has been marked as fetched", id)
+	utils.RespondWithJSON(w, http.StatusOK, struct{}{})
 }
 
 func handleGetFeeds(w http.ResponseWriter, r *http.Request, dbQueries *database.Queries) {

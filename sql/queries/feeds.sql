@@ -14,6 +14,11 @@ from feeds
 order by last_fetched_at
 limit $1;
 
+-- name: MarkFeedFetched :exec
+update feeds
+set last_fetched_at = now(), updated_at = now()
+where id = $1;
+
 -- name: GetFeeds :many
 select *
 from feeds;
