@@ -26,31 +26,6 @@ type Item struct {
 	Title string `xml:"title"`
 }
 
-func fetchRSSFeed(url string) (*RSS, error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching feed: %v", err)
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("error: status code %d", response.StatusCode)
-	}
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading body: %v", err)
-	}
-
-	var rss RSS
-	if err := xml.Unmarshal(body, &rss); err != nil {
-		return nil, fmt.Errorf("error unmarshalling XML: %v", err)
-	}
-
-	return &rss, nil
-}
-
 func FeedWorker(dbQueries *database.Queries, interval time.Duration, batchSize int) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -92,4 +67,29 @@ func FeedWorker(dbQueries *database.Queries, interval time.Duration, batchSize i
 
 		time.Sleep(interval)
 	}
+}
+
+func fetchRSSFeed(url string) (*RSS, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching feed: %v", err)
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error: status code %d", response.StatusCode)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading body: %v", err)
+	}
+
+	var rss RSS
+	if err := xml.Unmarshal(body, &rss); err != nil {
+		return nil, fmt.Errorf("error unmarshalling XML: %v", err)
+	}
+
+	return &rss, nil
 }
