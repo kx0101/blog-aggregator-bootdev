@@ -1,0 +1,57 @@
+package handlers
+
+import (
+	"encoding/xml"
+	"fmt"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/kx0101/blog-aggregator-bootdev/handlers/middlewares"
+	"github.com/kx0101/blog-aggregator-bootdev/internal/database"
+)
+
+func RegisterHandlers(mux *http.ServeMux, dbQueries *database.Queries) {
+	cfg := &middlewares.APIConfig{DBQueries: dbQueries}
+
+	RegisterFeedHandlers(cfg, mux)
+	RegisterFeedFollowsHandlers(cfg, mux)
+	RegisterUserHandlers(cfg, mux)
+	RegisterUtilsHandlers(cfg, mux)
+}
+
+type RSS struct {
+	XMLName xml.Name `xml:"rss"`
+	Channel Channel  `xml:"channel"`
+}
+
+func FeedWorker(interval time.Duration, batchSize int) {
+	for {
+		feeds := []string{"https://blog.boot.dev/index.xml", "https://wagslane.dev/index.xml"}
+
+		var wg sync.WaitGroup
+		wg.Add(len(feeds))
+
+		for _, feed := range feeds {
+			go func(url string) {
+				defer wg.Done()
+
+				rss, err := fetchRSSFeed(url)
+				if err != nil {
+					fmt.Printf("Error fetching RSS feed %s: %s\n", url, err)
+					return
+				}
+
+				fmt.Printf("Feed Title: %s\n", rss.Channel.Title)
+				fmt.Println("Posts:")
+				for _, item := range rss.Channel.Items {
+					fmt.Printf("- %s\n", item.Title)
+				}
+			}(feed)
+		}
+
+		wg.Wait()
+
+		time.Sleep(interval)
+	}
+}

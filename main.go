@@ -6,10 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kx0101/blog-aggregator-bootdev/handlers"
 	"github.com/kx0101/blog-aggregator-bootdev/internal/database"
+	"github.com/kx0101/blog-aggregator-bootdev/utils"
 	_ "github.com/lib/pq"
 )
 
@@ -43,6 +45,8 @@ func main() {
 		Addr:    fmt.Sprintf(":%v", PORT),
 		Handler: mux,
 	}
+
+	go utils.FeedWorker(dbQueries, 5*time.Second, 10)
 
 	log.Printf("Server is listening on port: %v", PORT)
 	if err := server.ListenAndServe(); err != nil {
