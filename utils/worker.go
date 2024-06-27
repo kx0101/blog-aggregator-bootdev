@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/kx0101/blog-aggregator-bootdev/internal/database"
 )
 
@@ -18,8 +19,9 @@ type RSS struct {
 }
 
 type Channel struct {
-	Title string `xml:"title"`
-	Items []Item `xml:"item"`
+	Title       string    `xml:"title"`
+	Items       []Item    `xml:"item"`
+	PublishedAt time.Time `xml:"pubDate"`
 }
 
 type Item struct {
@@ -50,6 +52,22 @@ func FeedWorker(dbQueries *database.Queries, interval time.Duration, batchSize i
 				rss, err := fetchRSSFeed(feed.Url)
 				if err != nil {
 					fmt.Printf("Error fetching RSS feed %s: %s\n", feed.Url, err)
+					return
+				}
+
+				id := uuid.New()
+				now := time.Now()
+				_, err = dbQueries.CreatePost(ctx, database.CreatePostParams{
+					ID:          id,
+					CreatedAt:   now,
+					UpdatedAt:   now,
+					Title:       rss.Channel.Title,
+					Url:         feed.Url,
+					PublishedAt: feed.CreatedAt,
+					FeedID:      feed.ID,
+				})
+				if err != nil {
+					fmt.Printf("Error creating post: %s", err)
 					return
 				}
 

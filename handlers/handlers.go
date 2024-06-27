@@ -14,4 +14,5 @@ func RegisterHandlers(mux *http.ServeMux, dbQueries *database.Queries) {
 	RegisterFeedFollowsHandlers(cfg, mux)
 	RegisterUserHandlers(cfg, mux)
 	RegisterUtilsHandlers(cfg, mux)
+	RegisterPostsHandlers(cfg, mux)
 }
