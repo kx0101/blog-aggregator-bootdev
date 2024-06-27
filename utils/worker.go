@@ -36,7 +36,7 @@ func FeedWorker(dbQueries *database.Queries, interval time.Duration, batchSize i
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		feeds, err := dbQueries.GetNextFeedsToFetch(ctx, 10)
+		feeds, err := dbQueries.GetNextFeedsToFetch(ctx, int32(batchSize))
 		if err != nil {
 			fmt.Printf("Error fetching RSS feed %v: %s\n", feeds, err)
 			return
@@ -82,8 +82,6 @@ func FeedWorker(dbQueries *database.Queries, interval time.Duration, batchSize i
 		}
 
 		wg.Wait()
-
-		time.Sleep(interval)
 	}
 }
 
